@@ -1,0 +1,24 @@
+#################
+#Temporary files#
+#################
+*.swp
+*.pyc
+.env/*
+
+
+###############
+# Data  files #
+###############
+assignment2-task5/
+*.zip
+data/
+
+###############
+# Other files #
+###############
+.ipynb_checkpoints/
+ref/
+test.ipynb
+__pycache__/
+.idea/
+
