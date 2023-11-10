@@ -185,9 +185,17 @@ class SGDMomentumOptim(Optimizer):
         ###################################################
         #raise NotImplementedError
         
+        # Update velocities and parameters
+        for k in grads:
+            # Update velocity
+            velocities[k] = momentum * velocities[k] + (1 - momentum) * grads[k]
+            # Update parameters
+            params[k] -= learning_rate * velocities[k]
+        
         ###################################################
         #               END OF YOUR CODE                  #
         ###################################################
+
 
 
 class SGDNestMomentumOptim(SGDMomentumOptim):
@@ -208,6 +216,18 @@ class SGDNestMomentumOptim(SGDMomentumOptim):
         # TODO: SGD+Momentum, Update params and velocities#
         ###################################################
         #raise NotImplementedError
+        for k in grads:
+            
+            interim_param = params[k] + momentum * velocities[k]
+            
+            # Compute gradient at interim parameters
+            interim_grad = grads[k]  
+            
+            # Update velocity using interim gradient
+            velocities[k] = momentum * velocities[k] - learning_rate * interim_grad
+            
+            # Update parameters using the updated velocity
+            params[k] += velocities[k]
         
         ###################################################
         #               END OF YOUR CODE                  #
@@ -266,7 +286,21 @@ class AdamOptim(Optimizer):
         # TODO: Adam, Update t, moments and params        #
         ###################################################
         #raise NotImplementedError
-        
+        for k in grads:
+            # Update biased first moment estimate
+            mean[k] = beta1 * mean[k] + (1 - beta1) * grads[k]
+            
+            # Update biased second raw moment estimate
+            var[k] = beta2 * var[k] + (1 - beta2) * (grads[k] ** 2)
+            
+            # Compute bias-corrected first moment estimate
+            mean_corrected = mean[k] / (1 - beta1 ** t)
+            
+            # Compute bias-corrected second raw moment estimate
+            var_corrected = var[k] / (1 - beta2 ** t)
+            
+            # Update parameters
+            params[k] -= learning_rate * mean_corrected /((np.sqrt(var_corrected) + eps)) 
         ###################################################
         #               END OF YOUR CODE                  #
         ###################################################
@@ -339,17 +373,28 @@ class BacktraceSGDOptim(SGDOptim):
             #raise NotImplementedError
             
             # shrink the step size
+            alpha *= beta
 
             # compute the Armijo upper bound
+            upper_bound = loss_curr - alpha * G
 
             # update model with the current step size
             # you may directly call super().step(current_stepsize)
+            super().step(alpha)
+
 
             # compute next loss L_{t+1}
+            preds_next = model.forward(X_batch)
+            loss_next = model.loss(preds_next, y_batch)
+
             # re-evaluate the model on X_batch and y_batch
+            preds_next = model.forward(X_batch)
+            loss_next = model.loss(preds_next, y_batch)
 
             # stopping criterion
             # compare L_{t+1} with the upper bound
+            if loss_next <= upper_bound or alpha < 1e-5: 
+                break
 
             ###################################################
             #               END OF YOUR CODE                  #

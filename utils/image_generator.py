@@ -34,6 +34,19 @@ class ImageGenerator(object):
         #                         TODO: YOUR CODE HERE                        #
         #######################################################################
         # raise NotImplementedError
+        self.x = x.copy()  # Use numpy's copy method to avoid contamination of original data
+        self.y = y.copy()
+        self.N = x.shape[0]
+        self.height = x.shape[1]
+        self.width = x.shape[2]
+        self.channel = x.shape[3]
+        self.num_pixels = self.height * self.width * self.channel
+        self.translated = False
+        self.degree_of_rotation = 0
+        self.is_horizontal_flip = False
+        self.is_vertical_flip = False
+        self.is_add_noise = False
+        
         
         #######################################################################
         #                                END TODO                             #
@@ -56,7 +69,7 @@ class ImageGenerator(object):
         self.bright = None
         self.x_aug = self.x.copy()
         self.y_aug = self.y.copy()
-        self.N_aug = self.N
+        self.N_aug = self.N 
     
     
     def create_aug_data(self):
@@ -120,6 +133,19 @@ class ImageGenerator(object):
         #                         TODO: YOUR CODE HERE                        #
         #######################################################################
         # raise NotImplementedError
+        num_batches = self.N_aug // batch_size
+        batch_count = 0
+        indices = np.arange(self.N_aug)
+
+        while True:
+            if batch_count < num_batches:
+                batch_indices = indices[batch_count * batch_size:(batch_count + 1) * batch_size]
+                batch_count += 1
+                yield self.x_aug[batch_indices], self.y_aug[batch_indices]
+            else:
+                if shuffle:
+                    np.random.shuffle(indices)
+                batch_count = 0
 
 
     def show(self, images):
@@ -131,6 +157,21 @@ class ImageGenerator(object):
         #                         TODO: YOUR CODE HERE                        #
         #######################################################################
         # raise NotImplementedError
+        if images.ndim == 3:
+        # If images are grayscale, add a channel dimension for plotting
+            images = images[..., np.newaxis]
+
+        plt.figure(figsize=(10, 10))
+        for i in range(16):
+            plt.subplot(4, 4, i+1)
+        # Check if there's a channel dimension and plot accordingly
+            if images.shape[-1] == 1:
+                plt.imshow(images[i, :, :, 0], cmap='gray')
+            else:
+                plt.imshow(images[i, :, :, :])
+            plt.axis('off')
+        plt.show()
+        
         
         #######################################################################
         #                                END TODO                             #
@@ -157,6 +198,11 @@ class ImageGenerator(object):
         #                         TODO: YOUR CODE HERE                        #
         #######################################################################
         # raise NotImplementedError
+        translated = np.roll(self.x, shift=shift_height, axis=1)
+        translated = np.roll(translated, shift=shift_width, axis=2)
+        self.translated = (translated, self.y.copy())
+        self.N_aug += self.N
+        return translated
         
         #######################################################################
         #                                END TODO                             #
@@ -191,6 +237,18 @@ class ImageGenerator(object):
         #                         TODO: YOUR CODE HERE                        #
         #######################################################################
         # raise NotImplementedError
+        if mode == 'h':
+            flipped = np.flip(self.x, axis=2)  # Horizontal flip
+        elif mode == 'v':
+            flipped = np.flip(self.x, axis=1)  # Vertical flip
+        elif mode == 'hv':
+            flipped = np.flip(self.x, axis=(1, 2))  # Both horizontal and vertical flip
+        else:
+            raise ValueError("Mode should be 'h', 'v', or 'hv'.")
+        
+        self.flipped = (flipped, self.y.copy())
+        self.N_aug += self.N
+        return flipped
         
         #######################################################################
         #                                END TODO                             #
@@ -233,6 +291,15 @@ class ImageGenerator(object):
         #                         TODO: YOUR CODE HERE                        #
         #######################################################################
         # raise NotImplementedError
+        if factor < 1:
+            raise ValueError("Factor must be greater than or equal to 1.")
+        
+        # Ensure no pixel value exceeds 255 after scaling
+        bright = np.clip(self.x * factor, 0, 255).astype(np.uint8)
+        
+        self.bright = (bright, self.y.copy())
+        self.N_aug += self.N
+        return bright
         
         #######################################################################
         #                                END TODO                             #

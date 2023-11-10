@@ -46,18 +46,36 @@ def bn_forward(x, gamma, beta, bn_params, mode):
     out = np.zeros_like(x)
     mean = moving_mean
     var = moving_var
+    
 
     if mode == "train":
         #############################################################
         # TODO: Batch normalization forward train mode              #
-        #      1. calculate sample mean and sample variance of x    #
+        #      1. calculate sample mean and sample variance of x         #
         #      2. normalize x with sample mean and sample variance  #
         #      3. transform x to desired distribution (gamma, beta) #
         #      4. estimate moving mean and moving variance          #
         # NOTE: Don't forget to store the parameters!               #
         #############################################################
         #raise NotImplementedError
+        # 1. Calculate the sample mean and variance of x
+        mean = np.mean(x, axis=0)
+        var = np.var(x, axis=0)
+    
+        # 2. Normalize x using the sample mean and variance
+        x_normalized = (x - mean) / np.sqrt(var + eps)
+
+        # 3. Transform the normalized x using gamma and beta
+        out = gamma * x_normalized + beta
+
+        # 4. Update the moving mean and variance
+        moving_mean = decay * moving_mean + (1 - decay) * mean
+        moving_var = decay * moving_var + (1 - decay) * var
         
+        # Update bn_params with the new moving mean and variance
+        bn_params["moving_mean"] = moving_mean
+        bn_params["moving_var"] = moving_var
+
         #############################################################
         #                       END OF YOUR CODE                    #
         #############################################################
@@ -68,7 +86,9 @@ def bn_forward(x, gamma, beta, bn_params, mode):
         #       normalize x with moving mean and moving variance    #
         #############################################################
         #raise NotImplementedError
-
+        # Normalize x using the moving mean and variance
+        x_normalized = (x - moving_mean) / np.sqrt(moving_var + eps)
+        out = gamma * x_normalized + beta
         #############################################################
         #                       END OF YOUR CODE                    #
         #############################################################
@@ -125,7 +145,7 @@ def dropout_forward(x, dropout_config, mode):
         # backward.                               #
         ###########################################
         #raise NotImplementedError
-        
+        pass
         ###########################################
         #             END OF YOUR CODE            #
         ###########################################
@@ -136,7 +156,7 @@ def dropout_forward(x, dropout_config, mode):
         # No need to use mask here.              #
         ##########################################
         #raise NotImplementedError
-        
+        pass
         ###########################################
         #             END OF YOUR CODE            #
         ###########################################

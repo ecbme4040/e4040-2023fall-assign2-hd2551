@@ -148,7 +148,39 @@ def conv2d_forward(x, w, b, pad, stride):
     #                         TODO: YOUR CODE HERE                        #
     #######################################################################
     # raise NotImplementedError
-    
+    N, H, W, C = x.shape
+    HH, WW, _, F = w.shape
+
+    # Calculate output spatial dimensions.
+    H_out = (H - HH + 2 * pad) // stride + 1
+    W_out = (W - WW + 2 * pad) // stride + 1
+
+    # Pad the input
+    x_padded = np.pad(x, ((0, 0), (pad, pad), (pad, pad), (0, 0)), 'constant')
+
+    # Initialize the output volume
+    out = np.zeros((N, H_out, W_out, F))
+
+    # Perform the convolution
+    for i in range(N):  # Iterate over the batch
+        for j in range(H_out):
+            for k in range(W_out):
+                for l in range(F):
+                    # Find the corners of the current "slice"
+                    h_start = j * stride
+                    w_start = k * stride
+                    h_end = h_start + HH
+                    w_end = w_start + WW
+
+                    # Extract the current slice from the padded input
+                    x_slice = x_padded[i, h_start:h_end, w_start:w_end, :]
+
+                    # Perform element-wise multiplication between the slice and the filter,
+                    # and then sum the result. Add the bias for the filter.
+                    out[i, j, k, l] = np.sum(x_slice * w[:, :, :, l]) + b[l]
+
+    return out
+       
     #######################################################################
     #                           END OF YOUR CODE                          #
     #######################################################################
@@ -209,6 +241,36 @@ def max_pool_forward(x, pool_size, stride):
     #                         TODO: YOUR CODE HERE                        #
     #######################################################################
     # raise NotImplementedError
+    # Retrieve dimensions from x's shape
+    batch, height, width, channels = x.shape
+    
+    # Compute the dimensions of the output
+    new_height = (height - pool_size) // stride + 1
+    new_width = (width - pool_size) // stride + 1
+    
+    # Initialize the output with zeros
+    pooled = np.zeros((batch, new_height, new_width, channels))
+    
+    # Loop over the input's batches
+    for b in range(batch):
+        # Loop over the output's vertical axis
+        for i in range(new_height):
+            # Loop over the output's horizontal axis
+            for j in range(new_width):
+                # Loop over the channels
+                for c in range(channels):
+                    # Find the corners of the current "slice"
+                    vertical_start = i * stride
+                    vertical_end = vertical_start + pool_size
+                    horizontal_start = j * stride
+                    horizontal_end = horizontal_start + pool_size
+                    
+                    # Compute the pooling operation on the current slice
+                    a_slice = x[b, vertical_start:vertical_end, horizontal_start:horizontal_end, c]
+                    pooled[b, i, j, c] = np.max(a_slice)
+    
+    # Return the pooled output
+    return pooled
     
     #######################################################################
     #                           END OF YOUR CODE                          #
@@ -235,6 +297,32 @@ def max_pool_backward(dout, x, pool_size, stride):
     #                         TODO: YOUR CODE HERE                        #
     #######################################################################
     # raise NotImplementedError
+    batch, height, width, channels = x.shape
+    _, height_new, width_new, _ = dout.shape
+    
+    dx = np.zeros_like(x)
+    
+    for b in range(batch):
+        for h in range(height_new):
+            for w in range(width_new):
+                for c in range(channels):
+                    # Find the corners of the current "slice"
+                    vertical_start = h * stride
+                    vertical_end = vertical_start + pool_size
+                    horizontal_start = w * stride
+                    horizontal_end = horizontal_start + pool_size
+                    
+                    # Use the corners to define the slice from a_prev
+                    x_slice = x[b, vertical_start:vertical_end, horizontal_start:horizontal_end, c]
+                    
+                    # Create the mask from x_slice
+                    mask = (x_slice == np.max(x_slice))
+                    
+                    # Set dx to be dpool over the correct entries in the mask
+                    dx[b, vertical_start:vertical_end, horizontal_start:horizontal_end, c] += mask * dout[b, h, w, c]
+    
+    # Return the gradient with respect to the input data
+    return dx
     
     #######################################################################
     #                           END OF YOUR CODE                          #

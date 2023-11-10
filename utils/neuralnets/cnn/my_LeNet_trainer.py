@@ -54,6 +54,13 @@ class MyLeNet_trainer():
         #       from part 3
         #############################################################
         # raise NotImplementedError
+        train_data = ImageGenerator(self.X_train, self.y_train)
+   
+        train_data.rotate(angle=15)
+        
+        train_data.flip(mode='h')
+        
+        train_data.create_aug_data()
         
         #############################################################
         # END TODO
@@ -94,7 +101,9 @@ class MyLeNet_trainer():
         # hint: use python next feature "next(self.train_data_next_batch)""
         #############################################################
         # raise NotImplementedError
-        
+        for _ in tqdm(range(self.n_batches)):
+            images, labels = next(self.train_data_next_batch)
+            self.train_step(images, labels)
         #############################################################
         # END TODO
         #############################################################

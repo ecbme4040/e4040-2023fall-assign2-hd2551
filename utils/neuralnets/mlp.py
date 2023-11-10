@@ -108,7 +108,11 @@ class MLP:
             ###############################################
             #raise NotImplementedError
             if use_bn:
-                pass
+                gamma = params["bn_gamma_{}".format(i)]
+                beta = params["bn_beta_{}".format(i)]
+                bn_cache_name = "bn_{}".format(i)
+                x, cache[bn_cache_name] = forward(x, gamma, beta, bn_params[i])
+                
             ###############################################
             # END OF BATCH NORMALIZATION                  #
             ###############################################
@@ -123,6 +127,9 @@ class MLP:
             ###############################################
             #raise NotImplementedError
             if dropout_config['enabled']:
+                dropout_cache_name = "dropout_{}".format(i)
+                x, cache[dropout_cache_name] = dropout_forward(x, dropout_config)
+
                 pass
             ###############################################
             # END OF DROPOUT                              #
@@ -178,7 +185,8 @@ class MLP:
             ###############################################
             #raise NotImplementedError
             if dropout_config["enabled"]:
-                pass # ADD HERE!
+                dx = dropout_backward(dx, cache["dropout_{}".format(j)])
+                
             ###############################################
             # END OF DROPOUT                              #
             ###############################################
@@ -192,7 +200,10 @@ class MLP:
             ###############################################
             #raise NotImplementedError
             if use_bn:
-                pass
+                dx, dgamma, dbeta = batchnorm_backward(dx, cache["bn_{}".format(j)])
+                grads["bn_gamma_{}".format(j)] = dgamma
+                grads["bn_beta_{}".format(j)] = dbeta
+                
             ###############################################
             # END OF BATCH NORMALIZATION                  #
             ###############################################
